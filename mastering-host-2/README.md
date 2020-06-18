@@ -83,3 +83,32 @@ Sortie:
     int 21h ; on affiche
     ret
 ```
+
+
+# Sujet 2 : Débugger et désassembler des programmes compilés
+## Hello world
+petits problèmes avec l'installation de ghidra. Donc désassemblage sur : https://godbolt.org/
+* Code en C
+```
+#include <stdio.h>
+
+int main(void) {
+    printf("hello world");
+    return 0;
+}
+```
+
+* Assembleur
+```
+.LC0:
+        .string "hello world" ;la string est stocké ici
+main:
+        push    rbp
+        mov     rbp, rsp
+        mov     edi, OFFSET FLAT:.LC0
+        mov     eax, 0
+        call    printf ;c'est ici que la string est affiché dans le terminal
+        mov     eax, 0
+        pop     rbp
+        ret
+```

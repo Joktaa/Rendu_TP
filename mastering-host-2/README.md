@@ -31,6 +31,23 @@ A db 0b
 B db 0b
 ```
 
+## Exo 2
+
+```
+org 100h
+
+;additionneur 1 bit
+
+mov al,1b ;on met notre premiere valeur
+mov bl,0b ;on met notre deuxieme valeur
+mov cl,al ;on met al dans cl et dl pour faciliter la suite des opérations
+mov dl,al
+
+xor cl,bl ;cl prend la somme de al et bl
+and dl,bl ;dl prend la retenue de al et bl
+
+```
+
 ## Exo 3
 
 ```

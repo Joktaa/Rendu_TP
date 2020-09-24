@@ -113,3 +113,152 @@ Taper visudo puis mettre "%joris ALL=(ALL) ALL".
 [root@localhost ~]# yum install epel-release
 [root@localhost ~]# yum install nginx
 ```
+
+## Configuration
+- On creé un fichier /srv/site1/index.html et un fichier /srv/site2/index.html. Les dossier ont comme permission 100 et les fichier 400. Le tout appartient a l'utilisateur webserver.
+```
+[root@localhost srv]# chmod 100 site1 site2
+[root@localhost srv]# chmod 400 site1/index.html site2/index.html
+[root@localhost srv]# chown -R webserver:webserver site1 site2
+
+[root@localhost srv]# ls -al
+[...]
+d--x------.  2 webserver webserver   24 Sep 23 17:57 site1
+d--x------.  2 webserver webserver   24 Sep 23 17:58 site2
+
+[root@localhost srv]# ls -al site1
+[...]
+-r--------. 1 webserver webserver 19 Sep 23 17:57 index.html
+```
+
+- On ajoute au fichier nginx.conf la mention `user webserver;`. Ensuite on crée les configurations pour les différents sites. On appelle le premier site 'localhost.site1' et le deuxième 'localhost.site2'. On donc à /etc/hosts ces noms à la ligne 127.0.0.1. Il faut aussi créer le certificat et la clé SSL.
+```
+[root@localhost srv]# cat /etc/hosts
+127.0.0.1   localhost localhost.localdomain localhost4 localhost4.localdomain4 localhost.site1 localhost.site2
+[...]
+
+[root@localhost srv]# openssl req -x509 -out localhost.crt -keyout localhost.key   -newkey rsa:2048 -nodes -sha256   -subj '/CN=localhost' -extensions EXT -config <( \
+   printf "[dn]\nCN=localhost\n[req]\ndistinguished_name = dn\n[EXT]\nsubjectAltName=DNS:localhost\nkeyUsage=digitalSignature\nextendedKeyUsage=serverAuth")
+
+[root@localhost srv]# cat /etc/nginx/nginx.conf
+user webserver;
+worker_processes auto;
+error_log /var/log/nginx/error.log;
+pid /run/nginx.pid;
+
+# Load dynamic modules. See /usr/share/doc/nginx/README.dynamic.
+include /usr/share/nginx/modules/*.conf;
+
+events {
+    worker_connections 1024;
+}
+
+http {
+     server {
+        listen 80;
+        listen [::]:80;
+        root /srv/site1;
+        index index.html index.htm;
+        server_name localhost.site1;
+
+        location / {
+           root /srv/site1;
+        }
+     }
+     
+     server {
+        listen 80;
+        listen [::]:80;
+        root /srv/site2;
+        index index.html index.htm;
+        server_name localhost.site2;
+
+   location / {
+       root /srv/site2;
+   }
+}
+
+
+    server {
+        listen       443 ssl http2 default_server;
+        listen       [::]:443 ssl http2 default_server;
+        server_name  localhost.site1;
+        root         /srv/site1;
+
+        ssl_certificate "/etc/pki/nginx/server.crt";
+        ssl_certificate_key "/etc/pki/nginx/private/server.key";
+        ssl_session_cache shared:SSL:1m;
+        ssl_session_timeout  10m;
+        ssl_ciphers HIGH:!aNULL:!MD5;
+        ssl_prefer_server_ciphers on;
+
+        # Load configuration files for the default server block.
+        include /etc/nginx/default.d/*.conf;
+
+        location / {
+          root /srv/site1;
+        }
+
+        error_page 404 /404.html;
+            location = /40x.html {
+        }
+
+        error_page 500 502 503 504 /50x.html;
+            location = /50x.html {
+        }
+    }
+    
+    server {
+        listen       443 ssl http2;
+        listen       [::]:443 ssl http2;
+        server_name  localhost.site2;
+        root         /srv/site2;
+
+        ssl_certificate "/etc/pki/nginx/server.crt";
+        ssl_certificate_key "/etc/pki/nginx/private/server.key";
+        ssl_session_cache shared:SSL:1m;
+        ssl_session_timeout  10m;
+        ssl_ciphers HIGH:!aNULL:!MD5;
+        ssl_prefer_server_ciphers on;
+
+        # Load configuration files for the default server block.
+        include /etc/nginx/default.d/*.conf;
+
+        location / {
+          root /srv/site2;
+        }
+
+        error_page 404 /404.html;
+            location = /40x.html {
+        }
+
+        error_page 500 502 503 504 /50x.html;
+            location = /50x.html {
+            }
+    }
+
+}
+
+[root@localhost srv]# firewall-cmd --add-port=80/tcp --permanent
+[root@localhost srv]# firewall-cmd --add-port=443/tcp --permanent
+[root@localhost srv]# firewall-cmd --reload
+[root@localhost srv]# systemctl restart firewalldl
+```
+
+ ## Tests
+ - Voici le résultat sur la machine node2
+ ```
+[root@localhost ~]# curl localhost.site1
+CECI EST LE SITE 1
+[root@localhost ~]# curl localhost.site2
+CECI EST LE SITE 2
+[root@localhost ~]# curl -k https://localhost.site2
+CECI EST LE SITE 2
+[root@localhost ~]# curl -k https://localhost.site1
+CECI EST LE SITE 1
+ ```
+
+# II. Script de sauvegarde
+L'utilisateur appartient au groupe backup
+Le dossier site a comme droit 150 et index a 440
+Le script a comme droit 100

@@ -259,6 +259,62 @@ CECI EST LE SITE 1
  ```
 
 # II. Script de sauvegarde
-L'utilisateur appartient au groupe backup
-Le dossier site a comme droit 150 et index a 440
-Le script a comme droit 100
+## Script
+Ce script doit être exécuter par l'utilisateur backup qui appartient au groupe webserver. Les dossiers site ont maintenant des droits 150 et les fichiers index.html ont comme droits 440. Le script a lui les droits 100.
+```
+#!/bin/sh
+
+# utilisation : ./tp1_backup.sh /srv/site1
+
+sauvegarde()
+{
+    # "site${1: -1}_$(date "+%Y%m%d_%H%M")"
+    tar -czvf site${1: -1}_$(date "+%Y%m%d_%H%M").tar.gz $1
+}
+
+suppression()
+{
+    if test $(ls | grep site${1: -1} | wc -w) -gt 7
+    then
+         ls | grep site${1: -1} | sort > tmp
+         rm -rf $(head -1 tmp)
+         rm -f tmp
+    fi
+}
+
+sauvegarde $1
+suppression $1
+```
+
+## Crontab
+```
+[backup@localhost ~]$ crontab -l
+01 * * * * ./tp1_backup.sh /srv/site1
+01 * * * * ./tp1_backup.sh /srv/site2
+```
+
+## Restauration
+```
+[root@localhost backup]# tar -xf site1_20200924_1234.tar.gz
+[root@localhost backup]# mv srv/site1/ /srv/site1
+```
+
+## Ajout à systemd
+```
+[root@localhost backup]# cat /etc/systemd/system/backup.service 
+[Unit]
+Description=Backup des sites 1 et 2
+After=network.target
+ 
+[Service]
+Type=simple 
+ExecStart=/home/backup/tp1_backup.sh /srv/site1
+RemainAfterExit=no
+
+[root@localhost backup]# systemctl start backup
+[root@localhost backup]# ls
+site1_20200924_1234.tar.gz  site1_20200924_1847.tar.gz  site2_20200924_1601.tar.gz
+site1_20200924_1601.tar.gz  site1_20200924_1849.tar.gz  tp1_backup.sh
+[root@localhost backup]# date
+Thu Sep 24 18:49:23 CEST 2020
+```

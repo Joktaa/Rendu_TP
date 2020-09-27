@@ -318,3 +318,16 @@ site1_20200924_1601.tar.gz  site1_20200924_1849.tar.gz  tp1_backup.sh
 [root@localhost backup]# date
 Thu Sep 24 18:49:23 CEST 2020
 ```
+
+# III. Monitoring, alerting
+## Installation et test
+* Installation 
+`bash <(curl -Ss https://my-netdata.io/kickstart.sh)`
+* test 
+`firewall-cmd --add-port=19999/tcp --permanent`
+`firewall-cmd --reload`
+![](./netdata.png)
+
+## Alerte discord
+- Creation d'un serveur discord et intégration d'un webhook
+- Ajout du lien du webhook dans /etc/netdata/health_alarm_notify.conf

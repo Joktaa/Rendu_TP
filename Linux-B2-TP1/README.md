@@ -75,7 +75,7 @@ rtt min/avg/max/mdev = 0.905/0.955/1.005/0.050 ms
 ```
 [root@localhost ~]# hostname node1
 
-[root@localhost ~]# echo "192.168.1.12 node2" >> /ect/hosts
+[root@localhost ~]# echo "192.168.1.12 node2" >> /etc/hosts
 
 [root@localhost ~]# ping -c 2 node2
 PING node2 (192.168.1.12) 56(84) bytes of data.

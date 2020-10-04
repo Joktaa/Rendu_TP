@@ -82,3 +82,4 @@ end
 ```
 
 # IV. Automation here we (slowly) come
+* node2 ne trust malheureusement pas node1. Malgès tout j'ai bien compris qu'on créait une paire de clé, et que la clé publique de cette clé se trouvait dans une bibliothéque de certificat interne à la VM.

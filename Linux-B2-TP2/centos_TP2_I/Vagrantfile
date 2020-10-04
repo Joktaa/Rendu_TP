@@ -1,0 +1,26 @@
+# -*- mode: ruby -*-
+# vi: set ft=ruby :
+
+disk = './disk2.vdi'
+Vagrant.configure("2") do |config|
+  config.vm.box = "centos/7"
+  config.vm.define "node0"
+  config.vbguest.auto_update = false
+  config.vm.box_check_update = false
+  config.vm.synced_folder ".", "/vagrant", disabled: true
+
+  config.vm.hostname = "node0"
+  config.vm.network "private_network", ip: "192.168.100.11"
+
+  config.vm.provider "virtualbox" do |vb|
+    unless File.exist?(disk)
+      vb.customize ['createhd', '--filename', disk, '--variant', 'Fixed', '--size', 5 * 1024]
+    end
+    vb.customize ['storageattach', :id,  '--storagectl', 'IDE', '--port', 1, '--device', 0, '--type', 'hdd', '--medium', disk]
+   
+    vb.memory = 1024
+    vb.name = "centos_vagrant_TP2"
+  end
+
+  config.vm.provision "shell", path: "install_vim.sh"
+end

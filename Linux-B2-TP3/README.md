@@ -1,8 +1,8 @@
 # TP3 : systemd
-## 0. Prérequis
+# 0. Prérequis
 La configuration de la VM utilisée se trouve dans le dossier Used_Box. Elle inclus un update, l'installation de plusieurs logiciel (vim, epel-release, nginx), la désactivation de selinux, et l'ouverture des ports 22, 80, 443
-## I. Services systemd
-### 1. Intro
+# I. Services systemd
+## 1. Intro
 * Nombre de services disponibles
 ```
 [vagrant@localhost ~]$ systemctl list-unit-files --type=service | tail -1 | cut -d " " -f 1
@@ -24,8 +24,8 @@ La configuration de la VM utilisée se trouve dans le dossier Used_Box. Elle inc
 32
 ```
 
-### 2. Analyse d'un service
-#### Path de l'unité nginx.service
+## 2. Analyse d'un service
+### Path de l'unité nginx.service
 ```
 [vagrant@localhost ~]$ systemctl status nginx
 ● nginx.service - The nginx HTTP and reverse proxy server
@@ -34,7 +34,7 @@ La configuration de la VM utilisée se trouve dans le dossier Used_Box. Elle inc
 ```
 Cette unité se situe donc ici : `/usr/lib/systemd/system/nginx.service`
 
-#### Analyse du code
+### Analyse du code
 ```
 [vagrant@localhost ~]$ systemctl cat nginx
 # /usr/lib/systemd/system/nginx.service
@@ -65,7 +65,26 @@ WantedBy=multi-user.target
 `ExecStart=/usr/sbin/nginx ` => commande à lancer lors de `systemctl start nginx`
 
 * ExecStartPre
-```
+```Description=The nginx HTTP and reverse proxy server
+After=network.target remote-fs.target nss-lookup.target
+
+[Service]
+User=server-web
+Type=forking
+Environment="PORT=35587"
+ExecStartPre=firewall-cmd --add-port=35587/tcp --permanent
+ExecStartPre=firewall-cmd --reload
+ExecStart=/usr/bin/python3 -m http.server 35587 &
+ExecReload=/bin/kill -s HUP $MAINPID
+ExecStopPost=firewall-cmd --remove-port=35587/tcp --permanent
+ExecStopPost=firewall-cmd --reload
+KillSignal=SIGQUIT
+TimeoutStopSec=5
+KillMode=process
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target
 ExecStartPre=/usr/bin/rm -f /run/nginx.pid
 ExecStartPre=/usr/sbin/nginx -t
 ```
@@ -90,7 +109,7 @@ ExecStartPre=/usr/sbin/nginx -t
 * After
 `After=network.target remote-fs.target nss-lookup.target` => vérifie que les services dont dépendent nginx ont fini d'être exéctuté
 
-#### Liste des services utilisant `WantedBy=multi-user.target`
+### Liste des services utilisant `WantedBy=multi-user.target`
 ```
 [vagrant@localhost system]$ grep 'WantedBy=multi-user.target' -r . | grep 'service' | cut -d ":" -f 1 | cut -d "/" -f 2
 rpcbind.service
@@ -121,4 +140,26 @@ auditd.service
 vboxadd.service
 ```
 
-### 3. Création d'un service
+## 3. Création d'un service
+### A. Serveur web
+* Le code du dis service est à retrouver dans ./systemd/units/server-wer.service
+* Tests
+```
+[vagrant@localhost system]$ sudo systemctl status server-web
+● server-web.service
+   Loaded: loaded (/etc/systemd/system/server-web.service; bad; vendor preset: disabled)
+   Active: activating (start) since Tue 2020-10-06 19:36:11 UTC; 17s ago
+  Control: 2465 (python3)
+   CGroup: /system.slice/server-web.service
+           └─2465 /usr/bin/python3 -m http.server 35587
+
+Oct 06 19:36:11 localhost.localdomain systemd[1]: Starting server-web.service...
+
+[vagrant@localhost system]$ curl http://localhost:35587
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<html>
+<head>
+[...]
+</body>
+</html>
+```

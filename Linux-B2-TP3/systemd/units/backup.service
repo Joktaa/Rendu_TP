@@ -1,0 +1,14 @@
+[Unit]
+Description=Script de backup
+
+[Service]
+User=backup
+Type=oneshot
+PIDFile=/tmp/backup.pid
+ExecStartPre=/home/backup/ExecStartPre.sh /home/backup/site
+ExecStart=/home/backup/ExecStart.sh /home/backup/site
+ExecStartPost=/home/backup/ExecStartPost.sh /home/backup/site
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target

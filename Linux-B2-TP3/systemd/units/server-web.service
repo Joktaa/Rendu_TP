@@ -1,3 +1,4 @@
+[Unit]
 Description=The nginx HTTP and reverse proxy server
 After=network.target remote-fs.target nss-lookup.target
 
@@ -5,11 +6,11 @@ After=network.target remote-fs.target nss-lookup.target
 User=server-web
 Type=forking
 Environment="PORT=35587"
-ExecStartPre=firewall-cmd --add-port=35587/tcp --permanent
+ExecStartPre=firewall-cmd --add-port=$PORT/tcp --permanent
 ExecStartPre=firewall-cmd --reload
-ExecStart=/usr/bin/python3 -m http.server 35587
+ExecStart=/usr/bin/python3 -m http.server $PORT
 ExecReload=/bin/kill -s HUP $MAINPID
-ExecStopPost=firewall-cmd --remove-port=35587/tcp --permanent
+ExecStopPost=firewall-cmd --remove-port=$PORT/tcp --permanent
 ExecStopPost=firewall-cmd --reload
 KillSignal=SIGQUIT
 TimeoutStopSec=5

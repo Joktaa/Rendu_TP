@@ -65,26 +65,7 @@ WantedBy=multi-user.target
 `ExecStart=/usr/sbin/nginx ` => commande à lancer lors de `systemctl start nginx`
 
 * ExecStartPre
-```Description=The nginx HTTP and reverse proxy server
-After=network.target remote-fs.target nss-lookup.target
-
-[Service]
-User=server-web
-Type=forking
-Environment="PORT=35587"
-ExecStartPre=firewall-cmd --add-port=35587/tcp --permanent
-ExecStartPre=firewall-cmd --reload
-ExecStart=/usr/bin/python3 -m http.server 35587 &
-ExecReload=/bin/kill -s HUP $MAINPID
-ExecStopPost=firewall-cmd --remove-port=35587/tcp --permanent
-ExecStopPost=firewall-cmd --reload
-KillSignal=SIGQUIT
-TimeoutStopSec=5
-KillMode=process
-PrivateTmp=true
-
-[Install]
-WantedBy=multi-user.target
+```
 ExecStartPre=/usr/bin/rm -f /run/nginx.pid
 ExecStartPre=/usr/sbin/nginx -t
 ```
@@ -145,15 +126,15 @@ vboxadd.service
 * Le code du dis service est à retrouver dans ./systemd/units/server-wer.service
 * Tests
 ```
-[vagrant@localhost system]$ sudo systemctl status server-web
-● server-web.service
-   Loaded: loaded (/etc/systemd/system/server-web.service; bad; vendor preset: disabled)
-   Active: activating (start) since Tue 2020-10-06 19:36:11 UTC; 17s ago
-  Control: 2465 (python3)
+[vagrant@localhost system]$ sudo systemctl status server-web.service
+● server-web.service - The nginx HTTP and reverse proxy server
+   Loaded: loaded (/etc/systemd/system/server-web.service; enabled; vendor preset: disabled)
+   Active: activating (start) since Wed 2020-10-07 10:10:52 UTC; 3s ago
+  Control: 5130 (python3)
    CGroup: /system.slice/server-web.service
-           └─2465 /usr/bin/python3 -m http.server 35587
+           └─5130 /usr/bin/python3 -m http.server 35587
 
-Oct 06 19:36:11 localhost.localdomain systemd[1]: Starting server-web.service...
+Oct 07 10:10:52 localhost.localdomain systemd[1]: Starting The nginx HTTP and reverse proxy server...
 
 [vagrant@localhost system]$ curl http://localhost:35587
 <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
@@ -163,3 +144,7 @@ Oct 06 19:36:11 localhost.localdomain systemd[1]: Starting server-web.service...
 </body>
 </html>
 ```
+
+### B. Sauvegarde
+* Les unités sont à retrouver dans ./systemd/units/backup.*
+* Les scripts de backup sont à retrouver dans ./systemd/scripts/

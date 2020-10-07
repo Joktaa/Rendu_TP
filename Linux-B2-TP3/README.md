@@ -123,7 +123,7 @@ vboxadd.service
 
 ## 3. Création d'un service
 ### A. Serveur web
-* Le code du dis service est à retrouver dans ./systemd/units/server-wer.service
+* Le code dudit service est à retrouver dans ./systemd/units/server-wer.service
 * Tests
 ```
 [vagrant@localhost system]$ sudo systemctl status server-web.service
@@ -148,3 +148,85 @@ Oct 07 10:10:52 localhost.localdomain systemd[1]: Starting The nginx HTTP and re
 ### B. Sauvegarde
 * Les unités sont à retrouver dans ./systemd/units/backup.*
 * Les scripts de backup sont à retrouver dans ./systemd/scripts/
+
+# II. Autres features
+## 1. Gestion de boot
+```
+[vagrant@localhost ~]$ systemd-analyze plot | grep -G '[^(]..ms'
+<text x="20" y="50">Startup finished in 386ms (kernel) + 1.240s (initrd) + 3.202s (userspace) = 4.830s
+  <text class="left" x="218.036" y="314.000">systemd-udev-trigger.service (224ms)</text>
+  <text class="left" x="225.343" y="554.000">systemd-hwdb-update.service (521ms)</text>
+  <text class="left" x="236.916" y="754.000">import-state.service (112ms)</text>
+  <text class="left" x="236.970" y="774.000">ldconfig.service (197ms)</text>
+  <text class="left" x="273.867" y="874.000">systemd-update-utmp.service (9ms)</text>
+  <text class="left" x="282.024" y="1034.000">sshd-keygen@ed25519.service (232ms)</text>
+  <text class="left" x="283.191" y="1074.000">sshd-keygen@ecdsa.service (222ms)</text>
+  <text class="left" x="284.894" y="1094.000">sshd-keygen@rsa.service (683ms)</text>
+  <text class="left" x="289.204" y="1134.000">NetworkManager.service (373ms)</text>
+  <text class="left" x="326.687" y="1214.000">NetworkManager-wait-online.service (520ms)</text>
+  <text class="left" x="374.218" y="1274.000">systemd-logind.service (301ms)</text>
+  <text class="left" x="378.985" y="1334.000">kdump.service (137ms)</text>
+```
+On filtre les services ayant une centaine dans les milisecondes. On trouve donc les trois plus lents services : `sshd-keygen@rsa.service`, `systemd-hwdb-update.service`, et `NetworkManager-wait-online.service`
+  
+## 2. Gestion de l'heure
+```
+[vagrant@localhost ~]$ timedatectl
+               Local time: Wed 2020-10-07 16:21:29 UTC
+           Universal time: Wed 2020-10-07 16:21:29 UTC
+                 RTC time: Wed 2020-10-07 16:21:20
+                Time zone: UTC (UTC, +0000)
+System clock synchronized: yes
+              NTP service: active
+          RTC in local TZ: no
+```
+On peut voir que je suis sur le fuseau horaire UTC +0, et que je suis synchronisé au serveur NTP.
+Pour changer de fuseau horaire, je fais :
+```
+[vagrant@localhost ~]$ timedatectl list-timezones | grep Paris
+Europe/Paris
+
+[vagrant@localhost ~]$ timedatectl set-timezone "Europe/Paris"
+
+[vagrant@localhost ~]$ timedatectl 
+               Local time: Wed 2020-10-07 18:37:28 CEST
+           Universal time: Wed 2020-10-07 16:37:28 UTC
+                 RTC time: Wed 2020-10-07 16:37:19
+                Time zone: Europe/Paris (CEST, +0200)
+System clock synchronized: yes
+              NTP service: active
+          RTC in local TZ: no
+
+```
+
+## 3. Gestion des noms et de la résolution de noms
+```
+[vagrant@localhost ~]$ hostnamectl 
+   Static hostname: localhost.localdomain
+         Icon name: computer-vm
+           Chassis: vm
+        Machine ID: 35f923f3e65348e891597dff8e12e0c8
+           Boot ID: 252745dae53b44359f04b0fe2d3a40c4
+    Virtualization: oracle
+  Operating System: CentOS Linux 8 (Core)
+       CPE OS Name: cpe:/o:centos:centos:8
+            Kernel: Linux 4.18.0-80.el8.x86_64
+      Architecture: x86-64
+```
+Mon hostname est `localhost.localdomain`
+
+Pour changer de hostname, un petit tour sur le man avec `/change`, et on trouve la commande `hostnamectl set-hostname NAME`
+```
+[vagrant@localhost ~]$ sudo hostnamectl set-hostname centos8_TP3
+[vagrant@localhost ~]$ hostnamectl 
+   Static hostname: centos8_TP3
+         Icon name: computer-vm
+           Chassis: vm
+        Machine ID: 35f923f3e65348e891597dff8e12e0c8
+           Boot ID: 252745dae53b44359f04b0fe2d3a40c4
+    Virtualization: oracle
+  Operating System: CentOS Linux 8 (Core)
+       CPE OS Name: cpe:/o:centos:centos:8
+            Kernel: Linux 4.18.0-80.el8.x86_64
+      Architecture: x86-64
+```

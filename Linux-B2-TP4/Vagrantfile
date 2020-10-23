@@ -1,0 +1,34 @@
+Vagrant.configure("2") do |config|
+  config.vm.box = "centos/7"
+  config.vbguest.auto_update = false
+  config.vm.box_check_update = false
+  config.vm.synced_folder ".", "/vagrant", disabled: true
+
+  config.vm.define "node1.gitea" do |gitea|
+    gitea.vm.hostname = "node1.gitea"
+    gitea.vm.network "private_network", ip: "192.168.10.11"
+    gitea.vm.provision :shell, path: "./scripts/init.sh"
+    gitea.vm.provision :shell, path: "./scripts/gitea.sh"
+  end
+  
+  config.vm.define "node2.db" do |db|
+    db.vm.hostname = "node2.db"
+    db.vm.network "private_network", ip: "192.168.10.12"
+    db.vm.provision :shell, path: "./scripts/init.sh"
+    db.vm.provision :shell, path: "./scripts/db.sh"
+  end
+  
+  config.vm.define "node3.rproxy" do |rproxy|
+    rproxy.vm.hostname = "node3.rproxy"
+    rproxy.vm.network "private_network", ip: "192.168.10.13"
+    rproxy.vm.provision :shell, path: "./scripts/init.sh"
+    rproxy.vm.provision :shell, path: "./scripts/rproxy.sh"
+  end
+
+  config.vm.define "node4.nfs" do |nfs|
+    nfs.vm.hostname = "node4.nfs"
+    nfs.vm.network "private_network", ip: "192.168.10.14"
+    nfs.vm.provision :shell, path: "./scripts/init.sh"
+    nfs.vm.provision :shell, path: "./scripts/nfs.sh"
+  end
+end
